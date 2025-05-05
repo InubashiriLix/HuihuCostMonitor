@@ -17,28 +17,31 @@ USER_AGENT = (
     "WindowsWechat(0x63090c33)XWEB/13639"
 )
 HEADERS = {"User-Agent": USER_AGENT}
-HEADERS_BASE = {"User-Agent": USER_AGENT}
 
 
 def get_new_token() -> tuple[str, str]:
     """return (token_name, token_value)"""
     OPEN_ID = os.getenv("OPEN_ID")
-    UNION_ID = os.getenv("UNION_ID")
+    # UNION_ID = os.getenv("UNION_ID")
     CERT_URL = os.getenv("CERT_URL")
     if OPEN_ID is None:
         raise EnvironmentError("OPEN_ID parse failed")
-    if UNION_ID is None:
-        raise EnvironmentError("UNION_ID parse failed")
     if CERT_URL is None:
         raise EnvironmentError("CERT_URL parse failed")
 
-    r = requests.get(
-        CERT_URL,
-        params={"openId": OPEN_ID, "unionId": UNION_ID},
-        headers=HEADERS,
-        timeout=10,
-    )
-    r.raise_for_status()
+    try:
+        r = requests.get(
+            CERT_URL,
+            params={"openId": OPEN_ID},
+            headers=HEADERS,
+            timeout=10,
+        )
+
+        r.raise_for_status()
+    except requests.RequestException as e:
+        print("get token failed")
+        raise e
+
     data = r.json()["data"]
     return data.get("tokenName", "satoken"), data["token"]
 
@@ -57,7 +60,7 @@ def get_room_id(
         2. /proxy/qy/sdcz/getDefault?areaId=...
            └─ 取 result[园区数组][0].id 作为 roomId
     """
-    hdr = HEADERS_BASE | {token_name: token_val}
+    hdr = HEADERS | {token_name: token_val}
 
     area_resp = requests.get(
         "https://api.215123.cn/proxy/qy/sdcz/queryByTeam",
@@ -72,15 +75,18 @@ def get_room_id(
         raise ValueError(f"campus_not_found {campus_title}")
 
     # step-2 取房间列表
-    lst_resp = requests.get(
-        "https://api.215123.cn/proxy/qy/sdcz/getDefault",
-        params={"areaId": area_id},
-        headers=hdr,
-        timeout=10,
-    ).json()["result"]
+    try:
+        lst_resp = requests.get(
+            "https://api.215123.cn/proxy/qy/sdcz/getDefault",
+            params={"areaId": area_id},
+            headers=hdr,
+            timeout=10,
+        ).json()["result"]
 
-    key = next(k for k in lst_resp if lst_resp[k])  # find the first not empty key
-    rooms = lst_resp[key]
+        key = next(k for k in lst_resp if lst_resp[k])  # find the first not empty key
+        rooms = lst_resp[key]
+    except Exception:
+        raise Exception("get room list failed")
 
     if room_match:
         rooms = [
@@ -89,10 +95,11 @@ def get_room_id(
             if room_match in (r.get("address", "") + r.get("userSn", ""))
         ]
 
-    print(rooms)
+    print(f"get room {rooms}")
 
     if not rooms:
         raise ValueError("could not find room with satisfied condition")
+
     room_id = rooms[0]["id"]
     print(f"[{datetime.now()}] found roomId = {room_id}")
     return room_id

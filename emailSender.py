@@ -74,7 +74,6 @@ def send_email_async(recipient_email: str, cost: str) -> bool:
 
 
 def send_email_in_background(recipient_email: str, cost: str):
-    # 使用线程池来异步发送邮件，测试专用函数
     with ThreadPoolExecutor() as executor:
         future = executor.submit(send_email_async, recipient_email, cost)
         return future.result()
