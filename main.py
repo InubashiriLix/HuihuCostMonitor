@@ -93,3 +93,5 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             logging.error("\ninterrupted，exiting")
             exit(0)
+        except Exception:
+            time.sleep(20)
