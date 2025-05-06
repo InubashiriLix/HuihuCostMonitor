@@ -8,6 +8,7 @@ from pathlib import Path
 import smtplib
 import mimetypes
 from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
@@ -69,22 +70,14 @@ class VerificationEmailSender:
         mine_type, sub_type = (mine_type or "application/octet-stream").split("/")
 
         if os.path.exists(csv_image_path):
-            # send the png plot
             with open(csv_image_path, "rb") as f:
-                part = MIMEBase(mine_type, sub_type)
-                part.set_payload(f.read())
-                encoders.encode_base64(part)
-
-            file_name = os.path.basename(csv_image_path)
-            part.add_header(
-                "Content-Disposition", f'attachment; filename="{file_name}"'
-            )
-            message.attach(part)
-            image_exist_flag = True
+                img = MIMEImage(f.read(), name=os.path.basename(csv_image_path))
+            message.attach(img)
             logging.info("csv PIC exists and attached")
+            image_exist_flag = True
         else:
-            logging.error("csv pic NOT EXISTS")
             image_exist_flag = False
+            logging.error("csv pic NOT EXISTS")
 
         if os.path.exists(csv_path):
             # send the raw csv
