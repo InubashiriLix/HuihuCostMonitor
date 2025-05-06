@@ -146,6 +146,7 @@ def get_balance(satoken: str, apartment_name: str) -> Optional[float]:
                 params={"areaId": areaid},
                 headers=hdr,
                 timeout=10,
+                verify=False,
             )
             if (lst_resp.status_code != 200) or (lst_resp.json() is None):
                 logging.error("get room id failed")
@@ -205,6 +206,119 @@ def get_balance(satoken: str, apartment_name: str) -> Optional[float]:
                 params={"areaId": areaid},
                 headers=hdr,
                 timeout=10,
+                verify=False,
+            ).json()["result"]
+            logging.info(f"get response: {lst_resp}")
+
+            apartment_id = lst_resp.get("other")[0].get("apartmentId")
+            room_id = lst_resp.get("other")[0].get("id")
+
+        except requests.RequestException as e:
+            logging.error("get room id failed")
+            raise e
+
+        # get the balance
+        params_wenxing = {"apartmentId": apartment_id, "roomId": room_id}
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639",
+            "satoken": satoken,
+            "Accept": "*/*",
+            "Content-Type": "application/json",
+        }
+        # TODO: add all response code decision
+
+        try:
+            response = requests.get(
+                BALANCE_URL_WENXING, params=params_wenxing, headers=headers, timeout=10
+            )  # timeout added for safety
+            if response.status_code != 200:
+                logging.error(
+                    "request balance failed, return code:", response.status_code
+                )
+                return None
+
+            rtn_balance = response.json().get("result")
+            if rtn_balance is None:
+                logging.error("get balance from response failed")
+                return None
+
+            return rtn_balance
+
+        except KeyboardInterrupt:
+            logging.error("interrupted，exiting")
+            exit(0)
+        except requests.exceptions.RequestException as e:
+            logging.error(f"error while requesting: {e}")
+            raise e
+
+    elif apartment_name == "文荟学生公寓":
+        areaid = get_apartment_map()["文荟学生公寓"]
+        BALANCE_URL_WENXING = "https://api.215123.cn/proxy/qy/sdcz/getRoomBalance"
+
+        try:
+            lst_resp = requests.get(
+                "https://api.215123.cn/proxy/qy/sdcz/getDefault",
+                params={"areaId": areaid},
+                headers=hdr,
+                timeout=10,
+                verify=False,
+            ).json()["result"]
+            logging.info(f"get response: {lst_resp}")
+
+            apartment_id = lst_resp.get("other")[0].get("apartmentId")
+            room_id = lst_resp.get("other")[0].get("id")
+
+        except requests.RequestException as e:
+            logging.error("get room id failed")
+            raise e
+
+        # get the balance
+        params_wenxing = {"apartmentId": apartment_id, "roomId": room_id}
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639",
+            "satoken": satoken,
+            "Accept": "*/*",
+            "Content-Type": "application/json",
+        }
+        # TODO: add all response code decision
+
+        try:
+            response = requests.get(
+                BALANCE_URL_WENXING, params=params_wenxing, headers=headers, timeout=10
+            )  # timeout added for safety
+            if response.status_code != 200:
+                logging.error(
+                    "request balance failed, return code:", response.status_code
+                )
+                return None
+
+            rtn_balance = response.json().get("result")
+            if rtn_balance is None:
+                logging.error("get balance from response failed")
+                return None
+
+            return rtn_balance
+
+        except KeyboardInterrupt:
+            logging.error("interrupted，exiting")
+            exit(0)
+        except requests.exceptions.RequestException as e:
+            logging.error(f"error while requesting: {e}")
+            raise e
+
+    elif apartment_name == "文萃学生公寓":
+        areaid = get_apartment_map()["文萃学生公寓"]
+        BALANCE_URL_WENXING = "https://api.215123.cn/proxy/qy/sdcz/getRoomBalance"
+
+        try:
+            lst_resp = requests.get(
+                "https://api.215123.cn/proxy/qy/sdcz/getDefault",
+                params={"areaId": areaid},
+                headers=hdr,
+                timeout=10,
+                verify=False,
             ).json()["result"]
             logging.info(f"get response: {lst_resp}")
 
@@ -251,7 +365,7 @@ def get_balance(satoken: str, apartment_name: str) -> Optional[float]:
             raise e
     else:
         raise ValueError(
-            "apartment name not supported, we only support 文缘学生公寓 and 文星学生公寓"
+            "apartment name not supported, we only support 文缘学生公寓 文荟学生公寓 文星学生公寓 文萃学生公寓"
         )
 
 
