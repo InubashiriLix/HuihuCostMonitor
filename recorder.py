@@ -6,7 +6,7 @@ import csv
 def update_csv(
     fee: str, datetime: str = datetime.datetime.now().strftime("%Y-%m-%d-%H")
 ) -> None:
-    file_path = os.path.join(os.path.dirname(__file__), "fee.csv")
+    file_path = os.path.join(os.path.dirname(__file__), "data/fee.csv")
     with open(file_path, mode="a", newline="") as file:
         writer = csv.writer(file)
         writer.writerow([datetime, fee])  # 写入日期和费用

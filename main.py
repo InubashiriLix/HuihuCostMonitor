@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 import threading
 
 
-from get_cost import get_rest_cost
+from get_info_refacted import get_balance, get_new_token, get_apartment_name, logging
+from create_image import plot_balance
 from recorder import update_csv
 from emailSender import send_email_async
 
@@ -34,7 +35,7 @@ def is_online(host="8.8.8.8", port=53, timeout=3) -> bool:
 
 def send_email_task():
     global desc_email, fee
-    print(f"[{datetime.now()}] send_email_task run")
+    logging.info(f"[{datetime.now()}] send_email_task run")
     if desc_email is None:
         raise EnvironmentError("email parse failed")
     send_email_async(str(desc_email), str(fee))
@@ -55,7 +56,7 @@ def schedule_next(hour: int = send_desc_hour, minute: int = send_desc_min):
     t.daemon = True  # ← 关键：把定时器线程设为 daemon
     t.start()
 
-    print(
+    logging.info(
         f"[{datetime.now()}] 下一次 send_email_task 安排在 {target} (in {int(delay)}s)"
     )
 
@@ -69,17 +70,26 @@ if __name__ == "__main__":
                 time.sleep(10)
                 continue
             else:
-                print("Network is online.")
-            fee = get_rest_cost()
+                logging.info("Network is online.")
+
+            try:
+                satoken = get_new_token()[1]
+            except Exception as e:
+                continue
+
+            apartment_name = get_apartment_name(satoken)
+            fee = get_balance(satoken, apartment_name)
+
             if fee is None:
-                print("get fee failed")
+                logging.error("get fee failed")
                 time.sleep(10)
                 continue
             else:
-                print(f"update fee: {fee}")
+                logging.info(f"update fee: {fee}")
                 update_csv(str(fee))
+                plot_balance("data/fee.csv", save_to="data/fee.png")
                 fee = None
                 time.sleep(int(60 * 60 * update_interval))  # 4 hour update
         except KeyboardInterrupt:
-            print("\ninterrupted，exiting")
+            logging.error("\ninterrupted，exiting")
             exit(0)

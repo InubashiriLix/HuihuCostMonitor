@@ -1,12 +1,27 @@
-import smtplib
+from json import encoder
 import re
 import os
-import logging
+
+import pathlib
+from pathlib import Path
+
+import smtplib
+import mimetypes
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
 
 import datetime
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] [%(levelname)s] [%(funcName)s]- %(message)s",
+)
 
 # 加载环境变量
 load_dotenv()
@@ -38,18 +53,75 @@ class VerificationEmailSender:
             raise EnvironmentError("email password parse failed")
 
         # 设置邮件内容
-        message = MIMEText(
-            f"today's dorm rest fee: {current_cost}",  # 邮件正文内容
-            "plain",  # 邮件格式
-            "utf-8",  # 编码
-        )
+        message = MIMEMultipart()
 
         message["From"] = SENDER_EMAIL  # 发件人
         message["To"] = self._recipient_email  # 收件人
         message["Subject"] = (
-            f"【dorm cost report】: {datetime.datetime.now().strftime('%Y-%m-%d')}"  # 邮件主题
+            f"【Dorm Balance】: {datetime.datetime.now().strftime('%Y-%m-%d')}"  # 邮件主题
         )
 
+        # ATTACH FILES
+        csv_path = "data/fee.csv"
+        csv_image_path = "data/fee.png"
+
+        mine_type, _ = mime_type, _ = mimetypes.guess_type(csv_path)
+        mine_type, sub_type = (mine_type or "application/octet-stream").split("/")
+
+        if os.path.exists(csv_image_path):
+            # send the png plot
+            with open(csv_image_path, "rb") as f:
+                part = MIMEBase(mine_type, sub_type)
+                part.set_payload(f.read())
+                encoders.encode_base64(part)
+
+            file_name = os.path.basename(csv_image_path)
+            part.add_header(
+                "Content-Disposition", f'attachment; filename="{file_name}"'
+            )
+            message.attach(part)
+            image_exist_flag = True
+            logging.info("csv PIC exists and attached")
+        else:
+            logging.error("csv pic NOT EXISTS")
+            image_exist_flag = False
+
+        if os.path.exists(csv_path):
+            # send the raw csv
+            with open(csv_path, "rb") as f:
+                part = MIMEBase(mine_type, sub_type)
+                part.set_payload(f.read())
+                encoders.encode_base64(part)
+
+            file_name = os.path.basename(csv_path)
+            part.add_header(
+                "Content-Disposition", f'attachment; filename="{file_name}"'
+            )
+            message.attach(part)
+            csv_exist_flag = True
+            logging.info("the scv exists and attached")
+        else:
+            csv_exist_flag = False
+            logging.error("the scv NOT exists")
+
+        # THE TEXT CONTENT
+        _content = f"Today's Balance: {current_cost}\n"
+
+        _content = (
+            _content + "csv file not exists (error)\n"
+            if not csv_exist_flag
+            else _content
+        )
+
+        _content = (
+            _content + "csv png file not exists (error)\n"
+            if not image_exist_flag
+            else _content
+        )
+        body = MIMEText(_content, "plain", "utf-8")
+        message.attach(body)
+
+        # SEND EMAIL
         try:
             # 使用 SMTP 而非 SMTP_SSL 来发送邮件
             with smtplib.SMTP(self._smtp_server, self._smtp_port) as smtp_connection:
@@ -64,6 +136,8 @@ class VerificationEmailSender:
         except smtplib.SMTPException as e:
             logging.error("邮件发送失败：%s", e)
             print("邮件发送失败：", e)
+            return False
+        finally:
             return False
 
 
@@ -82,8 +156,8 @@ def send_email_in_background(recipient_email: str, cost: str):
 # 如果需要测试该脚本
 if __name__ == "__main__":
     # 异步发送邮件
-    from get_cost import get_rest_cost
+    from get_info_refacted import _get_cost_
 
-    cost = get_rest_cost() or "NULL"
+    cost = _get_cost_() or "NULL"
 
-    send_email_in_background("enterYourEmail@163.com", str(cost))
+    send_email_in_background("13329001003@163.com", str(cost))

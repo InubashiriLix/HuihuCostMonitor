@@ -1,3 +1,5 @@
 .env
 __pycache__/
 fee.csv
+data/fee.png
+test.py
