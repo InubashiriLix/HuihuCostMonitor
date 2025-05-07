@@ -1,5 +1,6 @@
 import requests
 import time
+import json
 
 import dotenv
 from dotenv import load_dotenv
@@ -25,8 +26,8 @@ class NetAuth:
         USE_AUTO_NET_LOGIN = False
 
     if USE_AUTO_NET_LOGIN:
-        USERNAME = os.getenv("USERNAME")
-        PASSWORD = os.getenv("PASSWORD")
+        USERNAME = os.getenv("USERNAME_DORM_NET")
+        PASSWORD = os.getenv("PASSWORD_DORM_NET")
         TELE_COMP_SHORT = os.getenv("TELE_COMP_SHORT")
         USE_LOW_COST_STRATEGY = os.getenv("USE_LOW_COST_STRATEGY")
 
@@ -43,9 +44,9 @@ class NetAuth:
             raise EnvironmentError(
                 "CHECK_INTERVAL Must be an Integer greater than 5, CHECK YOUR .env file"
             )
-        assert CHECK_INTERVAL > 5, (
-            "CHECK_INTERVAL Must be an Integer greater than 5, CHECK YOUR .env file"
-        )
+        assert (
+            CHECK_INTERVAL > 5
+        ), "CHECK_INTERVAL Must be an Integer greater than 5, CHECK YOUR .env file"
 
         # validate the username, pswd, and telcom name
         if (USERNAME is None) or (PASSWORD is None) or (TELE_COMP_SHORT is None):
@@ -74,7 +75,7 @@ class NetAuth:
             "Accept-Encoding": "gzip, deflate",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6,es;q=0.5",
             "Connection": "keep-alive",
-            "Content-Type": "application/json; charset=UTF-8",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Host": "10.10.16.12",
             "Origin": "http://10.10.16.12",
             "Referer": "http://10.10.16.12/portal/mobile.html?v=202208181518",
@@ -111,9 +112,9 @@ class NetAuth:
                             time.sleep(
                                 60 * 60 * 5
                             )  # delay for 5 hours (save resources)
-                        else:
-                            logging.info("Auth: retry immediately")
-                            continue
+                    else:
+                        logging.info("Auth: retry immediately")
+                        continue
         else:
             logging.info(
                 "Auth: Auto net login is enabled, if you want to enable it, set the USE_AUTO_NET_LOGIN=TRUE in the .env file"
@@ -145,15 +146,23 @@ class NetAuth:
         """
 
         try:
-            response = requests.post(
-                self.url, headers=self.headers, json=self.payload, timeout=10
+            logging.info(f"using username: {self.USERNAME}")
+            logging.info(f"using password: {self.PASSWORD}")
+            resp = requests.post(
+                self.url,
+                headers=self.headers,
+                json=self.payload,  # 或 data=self.payload 见下面
+                timeout=10,
             )
-            if response.status_code == 200:
+            resp.raise_for_status()  # HTTP 不是 2xx 会抛异常
+            data = resp.json()
+
+            if data.get("reply_code") == 0:
                 logging.info("Auth: Net auth success")
                 return True
             else:
-                logging.error("Auth: Authentication failed")
-                logging.error(f"report: {response.text}")
+                logging.error("Auth: 登录失败")
+                logging.error(f"server reply: {data}")
                 return False
         except requests.exceptions.RequestException as req_e:
             logging.error("Auth: request failed, you may not in the 慧湖通校园网")
