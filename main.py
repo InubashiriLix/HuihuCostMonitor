@@ -101,5 +101,7 @@ if __name__ == "__main__":
             logging.error(e)
             logging.error("environment variable parse failed or file not found")
             exit(1)
-        except Exception:
+        except Exception as e:
+            logging.error("unknown error")
+            logging.error(e)
             time.sleep(60)
