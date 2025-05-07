@@ -10,7 +10,8 @@ from get_info_refacted import get_balance, get_new_token, get_apartment_name, lo
 from create_image import plot_balance
 from recorder import update_csv
 from emailSender import send_email_async
-
+from utils import is_online, file_sys_ensure
+from auto_net_connector import NetAuth
 
 use_email: bool = True if os.getenv("USE_EMAIL") == "TRUE" else False
 update_interval: float = float(os.getenv("UPDATE_INTERVAL", 4))  # 默认 4 小时
@@ -18,19 +19,9 @@ desc_email = os.getenv("DESC_EMAIL")
 send_desc_hour: int = int(os.getenv("SENDING_HOUR", 8)) % 24
 send_desc_min: int = int(os.getenv("SENDING_MIN", 0)) % 60
 
+use_auto_connector: bool = True if os.getenv("USE_AUTO_NET_LOGIN") == "TRUE" else False
+
 fee = None
-
-
-def is_online(host="8.8.8.8", port=53, timeout=3) -> bool:
-    """
-    尝试和指定 host:port 建 TCP 连接（默认 Google DNS）。
-    超时或异常即认为网络不通。
-    """
-    try:
-        with socket.create_connection((host, port), timeout):
-            return True
-    except OSError:
-        return False
 
 
 def send_email_task():
@@ -62,8 +53,20 @@ def schedule_next(hour: int = send_desc_hour, minute: int = send_desc_min):
 
 
 if __name__ == "__main__":
-    if use_email:
+    file_sys_ensure("data")
+
+    if use_auto_connector:
+        logging.info("you have set the auto net connect, thread start now")
+        auto_net_connector = NetAuth()
+        execute_auto_net_connect_thread = threading.Thread(
+            target=auto_net_connector.execute, daemon=True
+        )
+        execute_auto_net_connect_thread.start()
+
+    if use_email:  # if you set
+        logging.info("you have set the sending email on, starting thread")
         schedule_next()
+
     while True:
         try:
             if not is_online():
@@ -93,5 +96,9 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             logging.error("\ninterrupted，exiting")
             exit(0)
+        except EnvironmentError as e:
+            logging.error(e)
+            logging.error("environment variable parse failed or file not found")
+            exit(1)
         except Exception:
             time.sleep(20)
