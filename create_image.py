@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 
-matplotlib.use("TkAgg")  # 或 "Agg" 如果只是保存 PNG 不弹窗
+matplotlib.use("Agg")  # 或 "TkAgg" 如果只是保存 PNG 不弹窗
 
 
 def plot_balance(
