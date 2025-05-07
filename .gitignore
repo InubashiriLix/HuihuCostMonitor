@@ -4,3 +4,5 @@ fee.csv
 data/fee.png
 test.py
 build
+dist
+main.spec
