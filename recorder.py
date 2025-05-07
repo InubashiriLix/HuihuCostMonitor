@@ -1,16 +1,15 @@
 import os
 import datetime
 import csv
+from typing import Union
+from pathlib import Path
 
 
 def update_csv(
-    fee: str, datetime: str = datetime.datetime.now().strftime("%Y-%m-%d-%H")
+    fee: str,
+    file_path: Union[str, Path],
+    datetime: str = datetime.datetime.now().strftime("%Y-%m-%d-%H"),
 ) -> None:
-    file_path = os.path.join(os.path.dirname(__file__), "data/fee.csv")
     with open(file_path, mode="a", newline="") as file:
         writer = csv.writer(file)
         writer.writerow([datetime, fee])  # 写入日期和费用
-
-
-if __name__ == "__main__":
-    update_csv("100")

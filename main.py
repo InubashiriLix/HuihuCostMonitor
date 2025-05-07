@@ -10,7 +10,7 @@ from get_info_refacted import get_balance, get_new_token, get_apartment_name, lo
 from create_image import plot_balance
 from recorder import update_csv
 from emailSender import send_email_async
-from utils import is_online, file_sys_ensure
+from utils import is_online, file_sys_ensure, get_base_dir
 from auto_net_connector import NetAuth
 
 use_email: bool = True if os.getenv("USE_EMAIL") == "TRUE" else False
@@ -22,6 +22,8 @@ send_desc_min: int = int(os.getenv("SENDING_MIN", 0)) % 60
 use_auto_connector: bool = True if os.getenv("USE_AUTO_NET_LOGIN") == "TRUE" else False
 
 fee = None
+
+BASE_DIR = get_base_dir()
 
 
 def send_email_task():
@@ -89,8 +91,10 @@ if __name__ == "__main__":
                 continue
             else:
                 logging.info(f"update fee: {fee}")
-                update_csv(str(fee))
-                plot_balance("data/fee.csv", save_to="data/fee.png")
+                update_csv(str(fee), BASE_DIR / "data/fee.csv")
+                plot_balance(
+                    (BASE_DIR / "data/fee.csv"), save_to=(BASE_DIR / "data/fee.png")
+                )
                 fee = None
                 time.sleep(int(60 * 60 * update_interval))  # 4 hour update
         except KeyboardInterrupt:

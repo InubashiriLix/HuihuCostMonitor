@@ -19,6 +19,10 @@ import datetime
 
 import logging
 
+from utils import get_base_dir
+
+BASE_DIR = get_base_dir()
+
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] [%(levelname)s] [%(funcName)s]- %(message)s",
@@ -63,8 +67,8 @@ class VerificationEmailSender:
         )
 
         # ATTACH FILES
-        csv_path = "data/fee.csv"
-        csv_image_path = "data/fee.png"
+        csv_path = BASE_DIR / "data/fee.csv"
+        csv_image_path = BASE_DIR / "data/fee.png"
 
         mine_type, _ = mime_type, _ = mimetypes.guess_type(csv_path)
         mine_type, sub_type = (mine_type or "application/octet-stream").split("/")

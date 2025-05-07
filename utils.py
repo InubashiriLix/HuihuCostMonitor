@@ -1,5 +1,7 @@
 import requests
 import socket
+import sys
+import pathlib
 
 
 def is_online(
@@ -59,3 +61,13 @@ def file_sys_ensure(folder_path: str):
         print(f"Folder created: {folder_path}")
     else:
         print(f"Folder already exists: {folder_path}")
+
+
+def get_base_dir() -> pathlib.Path:
+    """
+    返回脚本/可执行文件所在目录，而不是临时解包目录。
+    """
+    if getattr(sys, "frozen", False):  # PyInstaller 打包后
+        return pathlib.Path(sys.executable).parent
+    else:  # 普通 .py 运行
+        return pathlib.Path(__file__).resolve().parent
