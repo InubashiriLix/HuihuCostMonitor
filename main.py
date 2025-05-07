@@ -72,22 +72,19 @@ if __name__ == "__main__":
     while True:
         try:
             if not is_online():
-                time.sleep(10)
+                time.sleep(60)
                 continue
             else:
                 logging.info("Network is online.")
 
-            try:
-                satoken = get_new_token()[1]
-            except Exception as e:
-                continue
+            satoken = get_new_token()[1]
 
             apartment_name = get_apartment_name(satoken)
             fee = get_balance(satoken, apartment_name)
 
             if fee is None:
                 logging.error("get fee failed")
-                time.sleep(10)
+                time.sleep(60)
                 continue
             else:
                 logging.info(f"update fee: {fee}")
@@ -105,4 +102,4 @@ if __name__ == "__main__":
             logging.error("environment variable parse failed or file not found")
             exit(1)
         except Exception:
-            time.sleep(20)
+            time.sleep(60)

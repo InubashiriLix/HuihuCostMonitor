@@ -53,6 +53,7 @@ def get_new_token() -> tuple[str, str]:
 
     except requests.RequestException as e:
         logging.error("get token failed")
+        logging.error(r.text)
         raise e
 
     logging.info("get token response:")
